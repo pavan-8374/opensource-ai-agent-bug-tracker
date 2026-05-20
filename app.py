@@ -303,56 +303,235 @@ elif page == "➕ New Ticket":
 
         notes = st.text_area("📝 Notes (optional)", placeholder="Frequency, workaround, extra context...", height=80)
 
-        screenshot = st.file_uploader("📸 Screenshot (optional)", type=["png", "jpg", "jpeg", "gif", "webp"])
-        if screenshot:
-            st.image(screenshot, caption="Preview", use_container_width=True)
-
         submitted = st.form_submit_button("🚀 Log Ticket", use_container_width=True)
 
-        if submitted:
-            if not title or not steps or not expected or not actual:
-                st.error("Please fill in all required fields.")
-            else:
-                ticket_id = generate_id()
-                screenshot_url = None
+    # ── Screenshot drop/paste zone (outside form so JS component works) ────────
+    st.markdown("### 📸 Screenshot (optional)")
+    st.markdown("<small style='color:#475569'>Drag & drop an image here, or press <kbd>Ctrl+V</kbd> / <kbd>Cmd+V</kbd> to paste a screenshot</small>", unsafe_allow_html=True)
 
-                if screenshot:
-                    with st.spinner("Uploading screenshot to GitHub..."):
-                        screenshot_url = upload_screenshot(
-                            screenshot.read(),
-                            screenshot.name,
-                            ticket_id
-                        )
+    screenshot_component = st.components.v1.html("""
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { background: transparent; font-family: 'Inter', sans-serif; }
 
-                new_ticket = {
-                    "id": ticket_id,
-                    "title": title,
-                    "testType": test_type,
-                    "severity": severity,
-                    "browser": browser,
-                    "steps": steps,
-                    "expected": expected,
-                    "actual": actual,
-                    "notes": notes,
-                    "screenshot_url": screenshot_url,
-                    "status": "Open",
-                    "date": datetime.now().strftime("%d %b %Y %H:%M"),
-                    "url": "https://opensource-ai-agent.uk/app",
+        #drop-zone {
+            border: 2px dashed #334155;
+            border-radius: 12px;
+            padding: 40px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: #0f1117;
+            color: #475569;
+            font-size: 14px;
+            user-select: none;
+            position: relative;
+        }
+        #drop-zone.drag-over {
+            border-color: #6366f1;
+            background: rgba(99,102,241,0.08);
+            color: #818cf8;
+        }
+        #drop-zone.has-image {
+            border-color: #22c55e;
+            border-style: solid;
+            padding: 12px;
+        }
+        #drop-zone .icon { font-size: 36px; margin-bottom: 10px; }
+        #drop-zone .hint { font-size: 12px; color: #334155; margin-top: 6px; }
+        #preview {
+            max-width: 100%;
+            max-height: 300px;
+            border-radius: 8px;
+            display: none;
+        }
+        #clear-btn {
+            display: none;
+            margin-top: 10px;
+            padding: 6px 16px;
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 6px;
+            color: #94a3b8;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        #clear-btn:hover { background: #334155; }
+        #paste-hint {
+            margin-top: 10px;
+            font-size: 11px;
+            color: #475569;
+        }
+        kbd {
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 4px;
+            padding: 1px 6px;
+            font-size: 11px;
+            color: #94a3b8;
+        }
+    </style>
+
+    <div id="drop-zone" tabindex="0">
+        <div id="empty-state">
+            <div class="icon">📸</div>
+            <div>Drop image here or click to browse</div>
+            <div class="hint">or press <kbd>Ctrl+V</kbd> / <kbd>Cmd+V</kbd> to paste from clipboard</div>
+        </div>
+        <img id="preview" />
+        <button id="clear-btn" onclick="clearImage(event)">✕ Remove</button>
+    </div>
+    <input type="file" id="file-input" accept="image/*" style="display:none">
+
+    <script>
+        const zone = document.getElementById('drop-zone');
+        const preview = document.getElementById('preview');
+        const clearBtn = document.getElementById('clear-btn');
+        const emptyState = document.getElementById('empty-state');
+        const fileInput = document.getElementById('file-input');
+        let imageData = null;
+
+        function showImage(dataUrl) {
+            imageData = dataUrl;
+            preview.src = dataUrl;
+            preview.style.display = 'block';
+            clearBtn.style.display = 'inline-block';
+            emptyState.style.display = 'none';
+            zone.classList.add('has-image');
+            // Send to Streamlit
+            window.parent.postMessage({ type: 'screenshot', data: dataUrl }, '*');
+        }
+
+        function clearImage(e) {
+            if (e) e.stopPropagation();
+            imageData = null;
+            preview.src = '';
+            preview.style.display = 'none';
+            clearBtn.style.display = 'none';
+            emptyState.style.display = 'block';
+            zone.classList.remove('has-image');
+            fileInput.value = '';
+            window.parent.postMessage({ type: 'screenshot', data: null }, '*');
+        }
+
+        function handleFile(file) {
+            if (!file || !file.type.startsWith('image/')) return;
+            const reader = new FileReader();
+            reader.onload = e => showImage(e.target.result);
+            reader.readAsDataURL(file);
+        }
+
+        // Click to browse
+        zone.addEventListener('click', () => { if (!imageData) fileInput.click(); });
+        fileInput.addEventListener('change', e => handleFile(e.target.files[0]));
+
+        // Drag & drop
+        zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
+        zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+        zone.addEventListener('drop', e => {
+            e.preventDefault();
+            zone.classList.remove('drag-over');
+            handleFile(e.dataTransfer.files[0]);
+        });
+
+        // Ctrl+V / Cmd+V paste — listen on window so it works anywhere on page
+        window.addEventListener('paste', e => {
+            const items = e.clipboardData?.items;
+            if (!items) return;
+            for (const item of items) {
+                if (item.type.startsWith('image/')) {
+                    handleFile(item.getAsFile());
+                    break;
                 }
+            }
+        });
+    </script>
+    """, height=220)
 
-                with st.spinner("Saving ticket to GitHub..."):
-                    _, current_sha = load_tickets()
-                    all_tickets = tickets + [new_ticket] if tickets else [new_ticket]
-                    # Put new ticket at top
-                    all_tickets = [new_ticket] + [t for t in tickets]
-                    success = save_tickets(all_tickets, current_sha)
+    # Store screenshot data in session state via query params workaround
+    if "screenshot_b64" not in st.session_state:
+        st.session_state.screenshot_b64 = None
 
-                if success:
-                    st.cache_data.clear()
-                    st.success(f"✅ Ticket **{ticket_id}** logged successfully!")
-                    st.balloons()
-                else:
-                    st.error("Failed to save ticket. Check your GitHub token and repo settings.")
+    # JS → Python bridge using st.components message passing
+    st.markdown("""
+    <script>
+    window.addEventListener('message', function(e) {
+        if (e.data && e.data.type === 'screenshot') {
+            // Streamlit doesn't natively receive postMessage,
+            // so we store in sessionStorage as a bridge
+            if (e.data.data) {
+                sessionStorage.setItem('pending_screenshot', e.data.data);
+            } else {
+                sessionStorage.removeItem('pending_screenshot');
+            }
+        }
+    });
+    </script>
+    """, unsafe_allow_html=True)
+
+    # Fallback standard uploader
+    with st.expander("Or click here to use standard file browser instead"):
+        fallback = st.file_uploader("Browse file", type=["png", "jpg", "jpeg", "gif", "webp"], label_visibility="collapsed")
+        if fallback:
+            file_bytes = fallback.read()
+            st.image(file_bytes, caption="Preview", use_container_width=True)
+            st.session_state.screenshot_b64 = base64.b64encode(file_bytes).decode()
+            st.session_state.screenshot_name = fallback.name
+
+    # ── Submit handler (outside form, triggered by form button) ───────────────
+    if submitted:
+        if not title or not steps or not expected or not actual:
+            st.error("Please fill in all required fields.")
+        else:
+            ticket_id = generate_id()
+            screenshot_url = None
+
+            # Use fallback uploader screenshot if available
+            scr_b64   = st.session_state.get("screenshot_b64")
+            scr_name  = st.session_state.get("screenshot_name", "screenshot.png")
+
+            if scr_b64:
+                with st.spinner("Uploading screenshot to GitHub..."):
+                    screenshot_url = upload_screenshot(
+                        base64.b64decode(scr_b64),
+                        scr_name,
+                        ticket_id
+                    )
+
+            new_ticket = {
+                "id": ticket_id,
+                "title": title,
+                "testType": test_type,
+                "severity": severity,
+                "browser": browser,
+                "steps": steps,
+                "expected": expected,
+                "actual": actual,
+                "notes": notes,
+                "screenshot_url": screenshot_url,
+                "status": "Open",
+                "date": datetime.now().strftime("%d %b %Y %H:%M"),
+                "url": "https://opensource-ai-agent.uk/app",
+            }
+
+            with st.spinner("Saving ticket to GitHub..."):
+                _, current_sha = load_tickets()
+                all_tickets = [new_ticket] + list(tickets)
+                success = save_tickets(all_tickets, current_sha)
+
+            if success:
+                st.cache_data.clear()
+                st.session_state.screenshot_b64 = None
+                st.session_state.screenshot_name = None
+                st.success(f"✅ Ticket **{ticket_id}** logged successfully!")
+                st.balloons()
+            else:
+                st.error("Failed to save ticket. Check your GitHub token and repo settings.")
+
+    st.markdown("""
+    > 💡 **Tip:** After taking a screenshot, click anywhere on this page and press **Ctrl+V** (Windows) or **Cmd+V** (Mac) to paste it directly into the drop zone above. Then click **Log Ticket**.
+    """)
+
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # PAGE: DASHBOARD
@@ -439,3 +618,4 @@ elif page == "📊 Dashboard":
                 </div>
                 <span style='color:{sev_colors.get(t["severity"],"#fff")};font-size:11px'>{t["severity"]}</span>
             </div>""", unsafe_allow_html=True)
+
