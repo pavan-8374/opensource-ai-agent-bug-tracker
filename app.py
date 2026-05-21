@@ -270,7 +270,15 @@ if page == "📋 All Tickets":
                     st.markdown("**📝 Notes**")
                     st.markdown(f"<div style='background:#0a0a0f;padding:12px;border-radius:8px;border:1px solid #1e293b;font-size:13px'>{t['notes']}</div>", unsafe_allow_html=True)
 
-                if t.get("screenshot_url"):
+                if t.get("screenshot_urls"):
+                    st.markdown("**📸 Screenshots**")
+                    scr_urls = t["screenshot_urls"]
+                    view_cols = st.columns(min(len(scr_urls), 3))
+                    for idx, url in enumerate(scr_urls):
+                        with view_cols[idx % 3]:
+                            st.image(url, caption=f"Screenshot {idx+1}", use_container_width=True)
+                elif t.get("screenshot_url"):
+                    # backward compat for old single-screenshot tickets
                     st.markdown("**📸 Screenshot**")
                     st.image(t["screenshot_url"], use_container_width=True)
 
@@ -282,101 +290,54 @@ elif page == "➕ New Ticket":
     st.markdown("<small style='color:#475569'>Fill in the details below. All fields except Notes and Screenshot are required.</small>", unsafe_allow_html=True)
     st.markdown("")
 
-    # ── Screenshot paste/drop zone ABOVE form (captures to session_state) ─────
-    if "screenshot_b64" not in st.session_state:
-        st.session_state.screenshot_b64 = None
-    if "screenshot_name" not in st.session_state:
-        st.session_state.screenshot_name = None
+    # ── Multiple screenshots — stored as list in session state ────────────────
+    if "screenshots" not in st.session_state:
+        st.session_state.screenshots = []  # list of {"b64": ..., "name": ...}
 
-    st.markdown("### 📸 Screenshot (optional)")
+    st.markdown("### 📸 Screenshots (optional)")
     st.markdown(
-        "<small style='color:#475569'>📌 Paste with <kbd style='background:#1e293b;border:1px solid #334155;border-radius:4px;padding:1px 6px;color:#94a3b8'>Ctrl+V</kbd> or drag & drop — then fill the form below and click <b>Log Ticket</b></small>",
+        "<small style='color:#475569'>Add as many screenshots as you need — drag & drop or click to browse. Each one will be attached to the ticket.</small>",
         unsafe_allow_html=True
     )
 
-    # Show current screenshot preview if one is staged
-    if st.session_state.screenshot_b64:
-        img_bytes = base64.b64decode(st.session_state.screenshot_b64)
-        st.image(img_bytes, caption="✅ Screenshot ready to submit", use_container_width=True)
-        if st.button("✕ Remove screenshot"):
-            st.session_state.screenshot_b64 = None
-            st.session_state.screenshot_name = None
+    # Multi-file uploader — supports drag & drop, select multiple files at once
+    uploaded_files = st.file_uploader(
+        "Drop images here or click to browse (select multiple with Ctrl+Click)",
+        type=["png", "jpg", "jpeg", "gif", "webp"],
+        accept_multiple_files=True,
+        label_visibility="collapsed",
+        key="screenshot_uploader"
+    )
+    if uploaded_files:
+        for f in uploaded_files:
+            file_bytes = f.read()
+            b64 = base64.b64encode(file_bytes).decode()
+            # Avoid duplicates by name
+            existing_names = [s["name"] for s in st.session_state.screenshots]
+            if f.name not in existing_names:
+                st.session_state.screenshots.append({"b64": b64, "name": f.name})
+        st.rerun()
+
+    # Show staged screenshots with individual remove buttons
+    if st.session_state.screenshots:
+        st.markdown(f"**{len(st.session_state.screenshots)} screenshot(s) attached:**")
+        cols_per_row = 3
+        scr_list = st.session_state.screenshots
+        for row_start in range(0, len(scr_list), cols_per_row):
+            row_items = scr_list[row_start:row_start + cols_per_row]
+            cols = st.columns(cols_per_row)
+            for i, scr in enumerate(row_items):
+                with cols[i]:
+                    img_bytes = base64.b64decode(scr["b64"])
+                    st.image(img_bytes, caption=scr["name"], use_container_width=True)
+                    if st.button(f"✕ Remove", key=f"remove_scr_{row_start + i}"):
+                        st.session_state.screenshots.pop(row_start + i)
+                        st.rerun()
+        if st.button("🗑️ Remove all screenshots"):
+            st.session_state.screenshots = []
             st.rerun()
     else:
-        # Native file uploader — supports drag & drop out of the box
-        uploaded = st.file_uploader(
-            "Drop image here, click to browse, or use Ctrl+V below",
-            type=["png", "jpg", "jpeg", "gif", "webp"],
-            label_visibility="collapsed",
-            key="screenshot_uploader"
-        )
-        if uploaded:
-            file_bytes = uploaded.read()
-            st.session_state.screenshot_b64 = base64.b64encode(file_bytes).decode()
-            st.session_state.screenshot_name = uploaded.name
-            st.rerun()
-
-        # Paste zone — captures Ctrl+V and writes to session state via query param trick
-        st.components.v1.html("""
-        <style>
-            * { box-sizing: border-box; margin: 0; padding: 0; }
-            body { background: transparent; font-family: Inter, sans-serif; }
-            #paste-zone {
-                border: 2px dashed #334155;
-                border-radius: 10px;
-                padding: 22px;
-                text-align: center;
-                color: #475569;
-                font-size: 13px;
-                background: #0f1117;
-                transition: all 0.2s;
-                cursor: text;
-            }
-            #paste-zone.active {
-                border-color: #6366f1;
-                background: rgba(99,102,241,0.07);
-                color: #818cf8;
-            }
-            kbd {
-                background: #1e293b; border: 1px solid #334155;
-                border-radius: 4px; padding: 1px 7px;
-                font-size: 11px; color: #94a3b8;
-            }
-        </style>
-        <div id="paste-zone" tabindex="0">
-            Click here, then press <kbd>Ctrl+V</kbd> / <kbd>Cmd+V</kbd> to paste a screenshot
-        </div>
-        <script>
-            const zone = document.getElementById('paste-zone');
-            zone.addEventListener('focus', () => zone.classList.add('active'));
-            zone.addEventListener('blur',  () => zone.classList.remove('active'));
-            zone.addEventListener('paste', e => {
-                const items = e.clipboardData?.items || [];
-                for (const item of items) {
-                    if (item.type.startsWith('image/')) {
-                        const file = item.getAsFile();
-                        const reader = new FileReader();
-                        reader.onload = ev => {
-                            // Send base64 to Streamlit via URL hash trick
-                            const data = ev.target.result; // data:image/png;base64,...
-                            const b64 = data.split(',')[1];
-                            const ext = item.type.split('/')[1];
-                            // Use Streamlit's setComponentValue equivalent via query string
-                            window.parent.postMessage({
-                                type: 'streamlit:setComponentValue',
-                                value: JSON.stringify({ b64: b64, name: 'paste.' + ext })
-                            }, '*');
-                            zone.textContent = '✅ Screenshot captured! Now fill the form and click Log Ticket.';
-                            zone.style.borderColor = '#22c55e';
-                            zone.style.color = '#22c55e';
-                        };
-                        reader.readAsDataURL(file);
-                        break;
-                    }
-                }
-            });
-        </script>
-        """, height=80)
+        st.info("📸 No screenshots yet — upload above to attach them to this ticket")
 
     st.markdown("---")
 
@@ -402,11 +363,12 @@ elif page == "➕ New Ticket":
 
         notes = st.text_area("📝 Notes (optional)", placeholder="Frequency, workaround, extra context...", height=80)
 
-        # Show screenshot status inside form
-        if st.session_state.screenshot_b64:
-            st.success("📸 Screenshot attached and ready to submit")
+        # Screenshot count status inside form
+        scr_count = len(st.session_state.screenshots)
+        if scr_count > 0:
+            st.success(f"📸 {scr_count} screenshot(s) attached and ready to submit")
         else:
-            st.info("📸 No screenshot attached — add one above if needed")
+            st.info("📸 No screenshots attached — add them above if needed")
 
         submitted = st.form_submit_button("🚀 Log Ticket", use_container_width=True)
 
@@ -416,18 +378,18 @@ elif page == "➕ New Ticket":
             st.error("Please fill in all required fields.")
         else:
             ticket_id = generate_id()
-            screenshot_url = None
+            screenshot_urls = []
 
-            scr_b64  = st.session_state.get("screenshot_b64")
-            scr_name = st.session_state.get("screenshot_name", "screenshot.png")
-
-            if scr_b64:
-                with st.spinner("Uploading screenshot to GitHub..."):
-                    screenshot_url = upload_screenshot(
-                        base64.b64decode(scr_b64),
-                        scr_name,
-                        ticket_id
-                    )
+            if st.session_state.screenshots:
+                with st.spinner(f"Uploading {len(st.session_state.screenshots)} screenshot(s) to GitHub..."):
+                    for idx, scr in enumerate(st.session_state.screenshots):
+                        url = upload_screenshot(
+                            base64.b64decode(scr["b64"]),
+                            scr["name"],
+                            f"{ticket_id}_{idx+1}"
+                        )
+                        if url:
+                            screenshot_urls.append(url)
 
             new_ticket = {
                 "id": ticket_id,
@@ -439,7 +401,8 @@ elif page == "➕ New Ticket":
                 "expected": expected,
                 "actual": actual,
                 "notes": notes,
-                "screenshot_url": screenshot_url,
+                "screenshot_urls": screenshot_urls,   # list of URLs
+                "screenshot_url": screenshot_urls[0] if screenshot_urls else None,  # backward compat
                 "status": "Open",
                 "date": datetime.now().strftime("%d %b %Y %H:%M"),
                 "url": "https://opensource-ai-agent.uk/app",
@@ -452,9 +415,8 @@ elif page == "➕ New Ticket":
 
             if success:
                 st.cache_data.clear()
-                st.session_state.screenshot_b64 = None
-                st.session_state.screenshot_name = None
-                st.success(f"✅ Ticket **{ticket_id}** logged successfully!")
+                st.session_state.screenshots = []
+                st.success(f"✅ Ticket **{ticket_id}** logged with {len(screenshot_urls)} screenshot(s)!")
                 st.balloons()
             else:
                 st.error("Failed to save ticket. Check your GitHub token and repo settings.")
