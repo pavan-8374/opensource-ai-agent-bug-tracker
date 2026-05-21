@@ -1,5 +1,23 @@
 [
   {
+    "id": "TCK-0630",
+    "title": "Remove \u201cphysical plan\u201d condition",
+    "testType": "Functional",
+    "severity": "Low",
+    "browser": "Chrome",
+    "steps": "1. Click Workbench \n2. Click Spark SQL \n3.  Select --> default > Sales Summary\n\nSELECT\n  product,\n  COUNT(*) as num_sales,\n  SUM(amount) as revenue,\n  AVG(amount) as avg_sale\nFROM sales\nWHERE year = 2024\nGROUP BY product\nORDER BY revenue DESC\nLIMIT 30;\n\n4. Click  RUN Query \n5. Click Explain Plan",
+    "expected": "Showing Physical Plan will create miss information to understand for some users.",
+    "actual": "1.\tExplain Plan and Format SQL buttons colours are not changed when user clicks/selects that feature. Then it will be easy to understand for which the output showing below container.\n2.\tExplain Plan showing backend code \u201cPhysical Plan\u201d for some queries, hide this code from users for not to get confused them\n",
+    "notes": "",
+    "screenshot_urls": [
+      "https://raw.githubusercontent.com/pavan-8374/opensource-ai-agent-bug-tracker/main/screenshots/TCK-0630_1_8.png"
+    ],
+    "screenshot_url": "https://raw.githubusercontent.com/pavan-8374/opensource-ai-agent-bug-tracker/main/screenshots/TCK-0630_1_8.png",
+    "status": "Open",
+    "date": "21 May 2026 13:33",
+    "url": "https://opensource-ai-agent.uk/app"
+  },
+  {
     "id": "TCK-3943",
     "title": "Add scroll option for the query output container",
     "testType": "UI",
