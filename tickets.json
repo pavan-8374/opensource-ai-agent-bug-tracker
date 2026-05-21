@@ -1,1 +1,20 @@
-[ ]
+[
+  {
+    "id": "TCK-3943",
+    "title": "Add scroll option for the query output container",
+    "testType": "UI",
+    "severity": "High",
+    "browser": "Chrome",
+    "steps": "1. Click Workbench \n2. Click Spark SQL \n3.  Select --> default > Sales Summary.",
+    "expected": "User should be able to scroll the query container to see all the queries.",
+    "actual": "The Spark SQL results panel fails to return the requested number of records. When executing a query with a LIMIT 30 clause, the output container truncates the data and is only able to see 12 rows. Unable to scroll the query container.",
+    "notes": "",
+    "screenshot_urls": [
+      "https://raw.githubusercontent.com/pavan-8374/opensource-ai-agent-bug-tracker/main/screenshots/TCK-3943_1_8.1.png"
+    ],
+    "screenshot_url": "https://raw.githubusercontent.com/pavan-8374/opensource-ai-agent-bug-tracker/main/screenshots/TCK-3943_1_8.1.png",
+    "status": "Open",
+    "date": "21 May 2026 13:23",
+    "url": "https://opensource-ai-agent.uk/app"
+  }
+]
