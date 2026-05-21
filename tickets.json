@@ -1,5 +1,23 @@
 [
   {
+    "id": "TCK-9652",
+    "title": "ddd",
+    "testType": "Functional",
+    "severity": "Low",
+    "browser": "Chrome",
+    "steps": "ddd",
+    "expected": "ddd",
+    "actual": "ddd",
+    "notes": "ddd",
+    "screenshot_urls": [
+      "https://raw.githubusercontent.com/pavan-8374/opensource-ai-agent-bug-tracker/main/screenshots/TCK-9652_1_8.png"
+    ],
+    "screenshot_url": "https://raw.githubusercontent.com/pavan-8374/opensource-ai-agent-bug-tracker/main/screenshots/TCK-9652_1_8.png",
+    "status": "Open",
+    "date": "21 May 2026 00:47",
+    "url": "https://opensource-ai-agent.uk/app"
+  },
+  {
     "id": "TCK-9543",
     "title": "test",
     "testType": "Functional",
