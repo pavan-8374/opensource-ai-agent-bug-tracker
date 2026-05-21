@@ -1,5 +1,23 @@
 [
   {
+    "id": "TCK-9445",
+    "title": "Full name not showing",
+    "testType": "UI",
+    "severity": "Medium",
+    "browser": "Chrome",
+    "steps": "1. Home page top",
+    "expected": "Keep character limit for this rename.",
+    "actual": "The full feature name is unable to see, and it is allowing rename the feature name by user. I tried by entering the combination of numbers and alphabets and it allowed unlimited characters to enter.",
+    "notes": "",
+    "screenshot_urls": [
+      "https://raw.githubusercontent.com/pavan-8374/opensource-ai-agent-bug-tracker/main/screenshots/TCK-9445_1_Workflow.png"
+    ],
+    "screenshot_url": "https://raw.githubusercontent.com/pavan-8374/opensource-ai-agent-bug-tracker/main/screenshots/TCK-9445_1_Workflow.png",
+    "status": "Open",
+    "date": "21 May 2026 21:30",
+    "url": "https://opensource-ai-agent.uk/app"
+  },
+  {
     "id": "TCK-0630",
     "title": "Remove \u201cphysical plan\u201d condition",
     "testType": "Functional",
