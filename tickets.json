@@ -1,5 +1,24 @@
 [
   {
+    "id": "TCK-0758",
+    "title": "Billing  -> payment",
+    "testType": "Functional",
+    "severity": "Critical",
+    "browser": "Chrome",
+    "steps": "1. Click Billing\n\n2. Upgrade plan\n\n3. Payment History",
+    "expected": "Once the payments not received or canceled the plan then automatically the user plan should downgrade to Free plan.",
+    "actual": "I subscribed Professional Daily Plan on 14/05/2026 and then day after canceled the  plan but  still today 21/05/2026 also have access to the same \"Professional Daily Plan\".",
+    "notes": "",
+    "screenshot_urls": [
+      "https://raw.githubusercontent.com/pavan-8374/opensource-ai-agent-bug-tracker/main/screenshots/TCK-0758_1_Billing.png",
+      "https://raw.githubusercontent.com/pavan-8374/opensource-ai-agent-bug-tracker/main/screenshots/TCK-0758_2_Billing2.png"
+    ],
+    "screenshot_url": "https://raw.githubusercontent.com/pavan-8374/opensource-ai-agent-bug-tracker/main/screenshots/TCK-0758_1_Billing.png",
+    "status": "Open",
+    "date": "21 May 2026 22:52",
+    "url": "https://opensource-ai-agent.uk/app"
+  },
+  {
     "id": "TCK-8027",
     "title": "Missing credentials error",
     "testType": "Functional",
