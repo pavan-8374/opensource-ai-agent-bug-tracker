@@ -1,5 +1,24 @@
 [
   {
+    "id": "TCK-7528",
+    "title": "Current Plan ",
+    "testType": "Functional",
+    "severity": "High",
+    "browser": "Chrome",
+    "steps": "1. Click Billing\n\n2.Billing & Plans\n\n3. Current Plan\n\n4. Click Upgrade plan ---> Choose Your Plan",
+    "expected": "The plan  should match \"Current Plan\" and \"Choose Your Plan\".",
+    "actual": "Billing & Plans tab showing Current Plan is  \"Community\" but in Choose Your Plan showing \n\"Professional (Daily)\" current plan. Both are not matched.",
+    "notes": "",
+    "screenshot_urls": [
+      "https://raw.githubusercontent.com/pavan-8374/opensource-ai-agent-bug-tracker/main/screenshots/TCK-7528_1_Billing2.png",
+      "https://raw.githubusercontent.com/pavan-8374/opensource-ai-agent-bug-tracker/main/screenshots/TCK-7528_2_Free.png"
+    ],
+    "screenshot_url": "https://raw.githubusercontent.com/pavan-8374/opensource-ai-agent-bug-tracker/main/screenshots/TCK-7528_1_Billing2.png",
+    "status": "Open",
+    "date": "21 May 2026 23:12",
+    "url": "https://opensource-ai-agent.uk/app"
+  },
+  {
     "id": "TCK-6434",
     "title": "Plan cancelation confirmation",
     "testType": "Both",
