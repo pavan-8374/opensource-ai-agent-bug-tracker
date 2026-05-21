@@ -1,5 +1,23 @@
 [
   {
+    "id": "TCK-0909",
+    "title": "Indian account Plan",
+    "testType": "Both",
+    "severity": "Medium",
+    "browser": "Chrome",
+    "steps": "1. Click Billing\n2. Billing & Plans\n3. Payment History",
+    "expected": "The payment history should display in INR not in GBP as they paid in INR. ",
+    "actual": "I logged in UK  with Indian credentials where they subscribed the Enterprise plan for 3380 INR.  When i checked payment history showing 3380 GBP. ",
+    "notes": "",
+    "screenshot_urls": [
+      "https://raw.githubusercontent.com/pavan-8374/opensource-ai-agent-bug-tracker/main/screenshots/TCK-0909_1_India.png"
+    ],
+    "screenshot_url": "https://raw.githubusercontent.com/pavan-8374/opensource-ai-agent-bug-tracker/main/screenshots/TCK-0909_1_India.png",
+    "status": "Open",
+    "date": "21 May 2026 23:27",
+    "url": "https://opensource-ai-agent.uk/app"
+  },
+  {
     "id": "TCK-7528",
     "title": "Current Plan ",
     "testType": "Functional",
