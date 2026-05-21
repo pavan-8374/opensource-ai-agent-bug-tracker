@@ -1,5 +1,23 @@
 [
   {
+    "id": "TCK-7727",
+    "title": "Upload",
+    "testType": "Functional",
+    "severity": "Medium",
+    "browser": "Chrome",
+    "steps": "1. Click AutoML \n2. AutoML Pipeline",
+    "expected": "Upload button required as this uploads data to train ML models.",
+    "actual": "Upload button not working. Unable to upload the files.",
+    "notes": "",
+    "screenshot_urls": [
+      "https://raw.githubusercontent.com/pavan-8374/opensource-ai-agent-bug-tracker/main/screenshots/TCK-7727_1_upload.png"
+    ],
+    "screenshot_url": "https://raw.githubusercontent.com/pavan-8374/opensource-ai-agent-bug-tracker/main/screenshots/TCK-7727_1_upload.png",
+    "status": "Open",
+    "date": "21 May 2026 23:35",
+    "url": "https://opensource-ai-agent.uk/app"
+  },
+  {
     "id": "TCK-0909",
     "title": "Indian account Plan",
     "testType": "Both",
