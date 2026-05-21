@@ -279,9 +279,108 @@ if page == "📋 All Tickets":
 # ═══════════════════════════════════════════════════════════════════════════════
 elif page == "➕ New Ticket":
     st.markdown("## ➕ New Bug Ticket")
-    st.markdown("<small style='color:#475569'>Fill in the details below. All fields except Notes are required.</small>", unsafe_allow_html=True)
+    st.markdown("<small style='color:#475569'>Fill in the details below. All fields except Notes and Screenshot are required.</small>", unsafe_allow_html=True)
     st.markdown("")
 
+    # ── Screenshot paste/drop zone ABOVE form (captures to session_state) ─────
+    if "screenshot_b64" not in st.session_state:
+        st.session_state.screenshot_b64 = None
+    if "screenshot_name" not in st.session_state:
+        st.session_state.screenshot_name = None
+
+    st.markdown("### 📸 Screenshot (optional)")
+    st.markdown(
+        "<small style='color:#475569'>📌 Paste with <kbd style='background:#1e293b;border:1px solid #334155;border-radius:4px;padding:1px 6px;color:#94a3b8'>Ctrl+V</kbd> or drag & drop — then fill the form below and click <b>Log Ticket</b></small>",
+        unsafe_allow_html=True
+    )
+
+    # Show current screenshot preview if one is staged
+    if st.session_state.screenshot_b64:
+        img_bytes = base64.b64decode(st.session_state.screenshot_b64)
+        st.image(img_bytes, caption="✅ Screenshot ready to submit", use_container_width=True)
+        if st.button("✕ Remove screenshot"):
+            st.session_state.screenshot_b64 = None
+            st.session_state.screenshot_name = None
+            st.rerun()
+    else:
+        # Native file uploader — supports drag & drop out of the box
+        uploaded = st.file_uploader(
+            "Drop image here, click to browse, or use Ctrl+V below",
+            type=["png", "jpg", "jpeg", "gif", "webp"],
+            label_visibility="collapsed",
+            key="screenshot_uploader"
+        )
+        if uploaded:
+            file_bytes = uploaded.read()
+            st.session_state.screenshot_b64 = base64.b64encode(file_bytes).decode()
+            st.session_state.screenshot_name = uploaded.name
+            st.rerun()
+
+        # Paste zone — captures Ctrl+V and writes to session state via query param trick
+        st.components.v1.html("""
+        <style>
+            * { box-sizing: border-box; margin: 0; padding: 0; }
+            body { background: transparent; font-family: Inter, sans-serif; }
+            #paste-zone {
+                border: 2px dashed #334155;
+                border-radius: 10px;
+                padding: 22px;
+                text-align: center;
+                color: #475569;
+                font-size: 13px;
+                background: #0f1117;
+                transition: all 0.2s;
+                cursor: text;
+            }
+            #paste-zone.active {
+                border-color: #6366f1;
+                background: rgba(99,102,241,0.07);
+                color: #818cf8;
+            }
+            kbd {
+                background: #1e293b; border: 1px solid #334155;
+                border-radius: 4px; padding: 1px 7px;
+                font-size: 11px; color: #94a3b8;
+            }
+        </style>
+        <div id="paste-zone" tabindex="0">
+            Click here, then press <kbd>Ctrl+V</kbd> / <kbd>Cmd+V</kbd> to paste a screenshot
+        </div>
+        <script>
+            const zone = document.getElementById('paste-zone');
+            zone.addEventListener('focus', () => zone.classList.add('active'));
+            zone.addEventListener('blur',  () => zone.classList.remove('active'));
+            zone.addEventListener('paste', e => {
+                const items = e.clipboardData?.items || [];
+                for (const item of items) {
+                    if (item.type.startsWith('image/')) {
+                        const file = item.getAsFile();
+                        const reader = new FileReader();
+                        reader.onload = ev => {
+                            // Send base64 to Streamlit via URL hash trick
+                            const data = ev.target.result; // data:image/png;base64,...
+                            const b64 = data.split(',')[1];
+                            const ext = item.type.split('/')[1];
+                            // Use Streamlit's setComponentValue equivalent via query string
+                            window.parent.postMessage({
+                                type: 'streamlit:setComponentValue',
+                                value: JSON.stringify({ b64: b64, name: 'paste.' + ext })
+                            }, '*');
+                            zone.textContent = '✅ Screenshot captured! Now fill the form and click Log Ticket.';
+                            zone.style.borderColor = '#22c55e';
+                            zone.style.color = '#22c55e';
+                        };
+                        reader.readAsDataURL(file);
+                        break;
+                    }
+                }
+            });
+        </script>
+        """, height=80, key="paste_zone")
+
+    st.markdown("---")
+
+    # ── Main ticket form ──────────────────────────────────────────────────────
     with st.form("new_ticket_form", clear_on_submit=True):
         title = st.text_input("🐛 Bug Title *", placeholder="Short, clear description of the issue")
 
@@ -303,56 +402,63 @@ elif page == "➕ New Ticket":
 
         notes = st.text_area("📝 Notes (optional)", placeholder="Frequency, workaround, extra context...", height=80)
 
-        screenshot = st.file_uploader("📸 Screenshot (optional)", type=["png", "jpg", "jpeg", "gif", "webp"])
-        if screenshot:
-            st.image(screenshot, caption="Preview", use_container_width=True)
+        # Show screenshot status inside form
+        if st.session_state.screenshot_b64:
+            st.success("📸 Screenshot attached and ready to submit")
+        else:
+            st.info("📸 No screenshot attached — add one above if needed")
 
         submitted = st.form_submit_button("🚀 Log Ticket", use_container_width=True)
 
-        if submitted:
-            if not title or not steps or not expected or not actual:
-                st.error("Please fill in all required fields.")
+    # ── Submit handler ────────────────────────────────────────────────────────
+    if submitted:
+        if not title or not steps or not expected or not actual:
+            st.error("Please fill in all required fields.")
+        else:
+            ticket_id = generate_id()
+            screenshot_url = None
+
+            scr_b64  = st.session_state.get("screenshot_b64")
+            scr_name = st.session_state.get("screenshot_name", "screenshot.png")
+
+            if scr_b64:
+                with st.spinner("Uploading screenshot to GitHub..."):
+                    screenshot_url = upload_screenshot(
+                        base64.b64decode(scr_b64),
+                        scr_name,
+                        ticket_id
+                    )
+
+            new_ticket = {
+                "id": ticket_id,
+                "title": title,
+                "testType": test_type,
+                "severity": severity,
+                "browser": browser,
+                "steps": steps,
+                "expected": expected,
+                "actual": actual,
+                "notes": notes,
+                "screenshot_url": screenshot_url,
+                "status": "Open",
+                "date": datetime.now().strftime("%d %b %Y %H:%M"),
+                "url": "https://opensource-ai-agent.uk/app",
+            }
+
+            with st.spinner("Saving ticket to GitHub..."):
+                _, current_sha = load_tickets()
+                all_tickets = [new_ticket] + list(tickets)
+                success = save_tickets(all_tickets, current_sha)
+
+            if success:
+                st.cache_data.clear()
+                st.session_state.screenshot_b64 = None
+                st.session_state.screenshot_name = None
+                st.success(f"✅ Ticket **{ticket_id}** logged successfully!")
+                st.balloons()
             else:
-                ticket_id = generate_id()
-                screenshot_url = None
+                st.error("Failed to save ticket. Check your GitHub token and repo settings.")
 
-                if screenshot:
-                    with st.spinner("Uploading screenshot to GitHub..."):
-                        screenshot_url = upload_screenshot(
-                            screenshot.read(),
-                            screenshot.name,
-                            ticket_id
-                        )
-
-                new_ticket = {
-                    "id": ticket_id,
-                    "title": title,
-                    "testType": test_type,
-                    "severity": severity,
-                    "browser": browser,
-                    "steps": steps,
-                    "expected": expected,
-                    "actual": actual,
-                    "notes": notes,
-                    "screenshot_url": screenshot_url,
-                    "status": "Open",
-                    "date": datetime.now().strftime("%d %b %Y %H:%M"),
-                    "url": "https://opensource-ai-agent.uk/app",
-                }
-
-                with st.spinner("Saving ticket to GitHub..."):
-                    _, current_sha = load_tickets()
-                    all_tickets = tickets + [new_ticket] if tickets else [new_ticket]
-                    # Put new ticket at top
-                    all_tickets = [new_ticket] + [t for t in tickets]
-                    success = save_tickets(all_tickets, current_sha)
-
-                if success:
-                    st.cache_data.clear()
-                    st.success(f"✅ Ticket **{ticket_id}** logged successfully!")
-                    st.balloons()
-                else:
-                    st.error("Failed to save ticket. Check your GitHub token and repo settings.")
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # PAGE: DASHBOARD
@@ -439,3 +545,4 @@ elif page == "📊 Dashboard":
                 </div>
                 <span style='color:{sev_colors.get(t["severity"],"#fff")};font-size:11px'>{t["severity"]}</span>
             </div>""", unsafe_allow_html=True)
+
