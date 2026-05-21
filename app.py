@@ -376,7 +376,7 @@ elif page == "➕ New Ticket":
                 }
             });
         </script>
-        """, height=80, key="paste_zone")
+        """, height=80)
 
     st.markdown("---")
 
