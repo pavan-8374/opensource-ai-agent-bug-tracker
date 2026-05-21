@@ -1,5 +1,23 @@
 [
   {
+    "id": "TCK-8027",
+    "title": "Missing credentials error",
+    "testType": "Functional",
+    "severity": "High",
+    "browser": "Chrome",
+    "steps": "1. Click Book \n2.  Click Credentials \n3. Add credentials of any account and save\n4.Click on Live steps",
+    "expected": "The Missing credentials error should not display after saving credentials.",
+    "actual": "Showing Missing credentials error after adding correct credentials.",
+    "notes": "",
+    "screenshot_urls": [
+      "https://raw.githubusercontent.com/pavan-8374/opensource-ai-agent-bug-tracker/main/screenshots/TCK-8027_1_Book2.png"
+    ],
+    "screenshot_url": "https://raw.githubusercontent.com/pavan-8374/opensource-ai-agent-bug-tracker/main/screenshots/TCK-8027_1_Book2.png",
+    "status": "Open",
+    "date": "21 May 2026 22:09",
+    "url": "https://opensource-ai-agent.uk/app"
+  },
+  {
     "id": "TCK-6721",
     "title": "Credentials saved but still asking to enter credentials and getting error - Missing credentials.",
     "testType": "Functional",
