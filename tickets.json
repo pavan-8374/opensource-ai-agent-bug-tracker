@@ -1,5 +1,23 @@
 [
   {
+    "id": "TCK-6721",
+    "title": "Credentials saved but still asking to enter credentials and getting error - Missing credentials.",
+    "testType": "Functional",
+    "severity": "High",
+    "browser": "Chrome",
+    "steps": "1. Click Book \n2.  Click Credentials \n3. Add credentials of any account and save\n4.Click on edge of \u201csave Encrypted\u201d.",
+    "expected": "The Missing credentials error should not display after saving credentials.",
+    "actual": "After providing correct login credentials of Odeon, the details also saved but still  \"Please add your credentials in the \ud83d\udd11 Credentials tab first\".",
+    "notes": "The Inline formula button is shown under the Save Encrypted button.\n[To get this you need to execute the Book It once then click on credentials]\n",
+    "screenshot_urls": [
+      "https://raw.githubusercontent.com/pavan-8374/opensource-ai-agent-bug-tracker/main/screenshots/TCK-6721_1_Book.png"
+    ],
+    "screenshot_url": "https://raw.githubusercontent.com/pavan-8374/opensource-ai-agent-bug-tracker/main/screenshots/TCK-6721_1_Book.png",
+    "status": "Open",
+    "date": "21 May 2026 22:05",
+    "url": "https://opensource-ai-agent.uk/app"
+  },
+  {
     "id": "TCK-9445",
     "title": "Full name not showing",
     "testType": "UI",
