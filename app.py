@@ -337,7 +337,7 @@ elif page == "➕ New Ticket":
             st.session_state.screenshots = []
             st.rerun()
     else:
-        st.info("📸 No screenshots yet — upload above to attach them to this ticket")
+        st.info("upload 📸 above to attach them to this ticket")
 
     st.markdown("---")
 
@@ -367,10 +367,8 @@ elif page == "➕ New Ticket":
         scr_count = len(st.session_state.screenshots)
         if scr_count > 0:
             st.success(f"📸 {scr_count} screenshot(s) attached and ready to submit")
-        else:
-            st.info("📸 No screenshots attached — add them above if needed")
 
-        submitted = st.form_submit_button("🚀 Log Ticket", use_container_width=True)
+        submitted = st.form_submit_button("Log Ticket", use_container_width=True)
 
     # ── Submit handler ────────────────────────────────────────────────────────
     if submitted:
