@@ -123,7 +123,7 @@ st.markdown("""
 # ── GitHub helpers ────────────────────────────────────────────────────────────
 def get_github_config():
     token = st.secrets.get("GITHUB_TOKEN", "")
-    repo  = st.secrets.get("GITHUB_REPO", "")   # e.g. "username/ai-agent-bug-tracker"
+    repo  = st.secrets.get("GITHUB_REPO", "")
     return token, repo
 
 def github_headers():
@@ -287,59 +287,19 @@ elif page == "➕ New Ticket":
     st.markdown("<small style='color:#475569'>Fill in the details below. All fields except Notes and Screenshot are required.</small>", unsafe_allow_html=True)
     st.markdown("")
 
-    # Initialize screenshots session state list cleanly
-    if "screenshots" not in st.session_state:
-        st.session_state.screenshots = []
-
-    st.markdown("### 📸 Screenshots (optional)")
-    st.markdown(
-        <small style='color:#475569'>Add as many screenshots as you need — drag & drop or click to browse.</small>,
-        unsafe_allow_html=True
-    )
-
-    # FIX: Process file uploader data into session state without using st.rerun() loops
-    uploaded_files = st.file_uploader(
-        "Drop images here or click to browse",
-        type=["png", "jpg", "jpeg", "gif", "webp"],
-        accept_multiple_files=True,
-        label_visibility="collapsed",
-        key="screenshot_uploader"
-    )
-    
-    if uploaded_files:
-        for f in uploaded_files:
-            existing_names = [s["name"] for s in st.session_state.screenshots]
-            if f.name not in existing_names:
-                file_bytes = f.read()
-                b64 = base64.b64encode(file_bytes).decode()
-                st.session_state.screenshots.append({"b64": b64, "name": f.name})
-
-    # Display staged image cards
-    if st.session_state.screenshots:
-        st.markdown(f"**{len(st.session_state.screenshots)} screenshot(s) attached:**")
-        cols_per_row = 3
-        scr_list = st.session_state.screenshots
-        for row_start in range(0, len(scr_list), cols_per_row):
-            row_items = scr_list[row_start:row_start + cols_per_row]
-            cols = st.columns(cols_per_row)
-            for i, scr in enumerate(row_items):
-                with cols[i]:
-                    img_bytes = base64.b64decode(scr["b64"])
-                    st.image(img_bytes, caption=scr["name"], use_container_width=True)
-                    if st.button(f"✕ Remove", key=f"remove_scr_{row_start + i}"):
-                        st.session_state.screenshots.pop(row_start + i)
-                        st.rerun()
-                        
-        if st.button("🗑️ Remove all screenshots"):
-            st.session_state.screenshots = []
-            st.rerun()
-    else:
-        st.info("Upload 📸 above to attach them to this ticket")
-
-    st.markdown("---")
-
-    # Form logic
+    # ── Main ticket form (Now contains the file uploader completely) ───────────
     with st.form("new_ticket_form", clear_on_submit=True):
+        
+        st.markdown("### 📸 Screenshots (optional)")
+        uploaded_files = st.file_uploader(
+            "Drop images here or click to browse",
+            type=["png", "jpg", "jpeg", "gif", "webp"],
+            accept_multiple_files=True,
+            label_visibility="collapsed",
+            key="form_screenshot_uploader"
+        )
+        
+        st.markdown("---")
         title = st.text_input("🐛 Bug Title *", placeholder="Short, clear description of the issue")
 
         c1, c2, c3 = st.columns(3)
@@ -360,12 +320,9 @@ elif page == "➕ New Ticket":
 
         notes = st.text_area("📝 Notes (optional)", placeholder="Frequency, workaround, extra context...", height=80)
 
-        scr_count = len(st.session_state.screenshots)
-        if scr_count > 0:
-            st.success(f"📸 {scr_count} screenshot(s) attached and ready to submit")
-
         submitted = st.form_submit_button("Log Ticket", use_container_width=True)
 
+    # ── Submit handler (Runs synchronously when the form is submitted) ───────
     if submitted:
         if not title or not steps or not expected or not actual:
             st.error("Please fill in all required fields.")
@@ -373,12 +330,14 @@ elif page == "➕ New Ticket":
             ticket_id = generate_id()
             screenshot_urls = []
 
-            if st.session_state.screenshots:
-                with st.spinner(f"Uploading {len(st.session_state.screenshots)} screenshot(s) to GitHub..."):
-                    for idx, scr in enumerate(st.session_state.screenshots):
+            # Process files directly from the form submission state
+            if uploaded_files:
+                with st.spinner(f"Uploading {len(uploaded_files)} screenshot(s) to GitHub..."):
+                    for idx, f in enumerate(uploaded_files):
+                        file_bytes = f.read()
                         url = upload_screenshot(
-                            base64.b64decode(scr["b64"]),
-                            scr["name"],
+                            file_bytes,
+                            f.name,
                             f"{ticket_id}_{idx+1}"
                         )
                         if url:
@@ -408,10 +367,8 @@ elif page == "➕ New Ticket":
 
             if success:
                 st.cache_data.clear()
-                st.session_state.screenshots = []
-                st.success(f"✅ Ticket **{ticket_id}** logged successfully!")
+                st.success(f"✅ Ticket **{ticket_id}** logged successfully with {len(screenshot_urls)} image(s)!")
                 st.balloons()
-                st.rerun()  # Forces interface clean update
             else:
                 st.error("Failed to save ticket. Check your GitHub token and repo settings.")
 
