@@ -1,5 +1,23 @@
 [
   {
+    "id": "TCK-4487",
+    "title": "Cloudflare Tunnel error",
+    "testType": "Functional",
+    "severity": "Critical",
+    "browser": "Chrome",
+    "steps": "Unable to login today",
+    "expected": "Login should work",
+    "actual": "Error 1033 Ray ID: a003f973cf05c028 \u2022 2026-05-23 12:13:24 UTC\nCloudflare Tunnel error",
+    "notes": "",
+    "screenshot_urls": [
+      "https://raw.githubusercontent.com/pavan-8374/opensource-ai-agent-bug-tracker/main/screenshots/TCK-4487_1_Error.png"
+    ],
+    "screenshot_url": "https://raw.githubusercontent.com/pavan-8374/opensource-ai-agent-bug-tracker/main/screenshots/TCK-4487_1_Error.png",
+    "status": "Open",
+    "date": "23 May 2026 12:17",
+    "url": "https://opensource-ai-agent.uk/app"
+  },
+  {
     "id": "TCK-7727",
     "title": "Upload",
     "testType": "Functional",
